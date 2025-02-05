@@ -22,10 +22,17 @@ class CustomModel(nn.Module):
         x = self.layer1(x)
         return self.custom_layer(x)
         
+
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        nn.init.xavier_uniform_(m.weight)
+        nn.init.zeros_(m.bias)
+        
+                
+        
 model = CustomModel(input_dim=5)
-print(model)
 
-
+model.apply(init_weights)
 
 
 
