@@ -57,18 +57,26 @@ print(train_data)
 
 
 class Encoder(nn.Module):
-    def __init__(self):
+    def __init__(self, input_dim, emb_dim, hidden_dim, num_layers):
         super(Encoder, self).__init__()
+        self.embedding = nn.Embedding(input_dim, emb_dim)
+        self.rnn = nn.LSTM(emb_dim, hidden_dim, num_layers, batch_first=True)
+
+
+    def forward(self, src):
+        embedded = self.embedding(src)
+        outputs, (hidden, cell) = self.rnn(embedded)
+        return hidden, cell
 
 
 
+INPUT_DIM = len(source_word2idx)
+EMB_DIM = 256
+HIDDEN_DIM = 512
+NUM_LAYERS = 2
 
-
-
-
-
-
-
+encoder = Encoder(INPUT_DIM, EMB_DIM, HIDDEN_DIM, NUM_LAYERS)
+print(encoder)
 
 
 
