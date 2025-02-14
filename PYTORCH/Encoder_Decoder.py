@@ -54,6 +54,7 @@ for src, tgt in data:
     
 print("Sample tensor input output:")
 print(train_data)
+print()
 
 
 class Encoder(nn.Module):
@@ -69,14 +70,32 @@ class Encoder(nn.Module):
         return hidden, cell
 
 
+class Decoder(nn.Module):
+    def __init__(self, output_dim, emb_dim, hidden_dim, num_layers):
+        super(Decoder, self).__init__()
+        self.embedding = nn.Embedding(output_dim, emb_dim)
+        self.rnn = nn.LSTM(emb_dim, hidden_dim, num_layers, batch_first=True)
+        self.fc_out = nn.Linear(hidden_dim, output_dim)
+    
+    def forward(self, input, hidden, cell):
+        input = input.unsqueeze(1)  # (Batch, 1) boyutunda olmalı
+        embedded = self.embedding(input)
+        output, (hidden, cell) = self.rnn(embedded, (hidden, cell))
+        prediction = self.fc_out(output.squeeze(1))  # Çıktıyı tam boyuta getir
+        return prediction, hidden, cell
+
 
 INPUT_DIM = len(source_word2idx)
+OUTPUT_DIM = len(target_word2idx)
 EMB_DIM = 256
 HIDDEN_DIM = 512
 NUM_LAYERS = 2
 
 encoder = Encoder(INPUT_DIM, EMB_DIM, HIDDEN_DIM, NUM_LAYERS)
+decoder = Decoder(OUTPUT_DIM, EMB_DIM, HIDDEN_DIM, NUM_LAYERS)
+
 print(encoder)
+print(decoder)
 
 
 
@@ -84,7 +103,24 @@ print(encoder)
 
 
 
+def translate_sentence(sentence, encoder, decoder, source_word2idx, target_word2idx, target_idx2word):
+    src_tensor = sentence_to_tensor(sentence, source_word2idx).unsqueeze(0)
+    hidden, cell = encoder(src_tensor)
+    input_token = torch.tensor([target_word2idx['<SOS>']], dtype=torch.long)
+    translated_sentence = []
+    for _ in range(len(sentence.split())):  # Maksimum 10 kelime çeviri
+        prediction, hidden, cell = decoder(input_token, hidden, cell)
+        top1 = prediction.argmax(1).item()
+        if target_idx2word[top1] == '<EOS>':
+            break
+        translated_sentence.append(target_idx2word[top1])
+        input_token = torch.tensor([top1], dtype=torch.long)
+    return ' '.join(translated_sentence)
 
+# Test Çeviri
+sample_sentence = "how are you"
+predicted_translation = translate_sentence(sample_sentence, encoder, decoder, source_word2idx, target_word2idx, target_idx2word)
+print(f"Translated '{sample_sentence}' to '{predicted_translation}'")
 
 
 
